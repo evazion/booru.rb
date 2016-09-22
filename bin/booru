@@ -1,0 +1,55 @@
+#!/usr/bin/env RUBYOPT=-w ruby
+
+require "clamp"
+require "booru"
+
+def resource(name)
+  subcommand name.to_s, "#{name} operations" do
+    self.default_subcommand = "index"
+
+    subcommand "show", "show #{name}" do
+      parameter "id", "#{name} id"
+
+      def execute
+        booru = Booru.new(site, login: login, api_key: api_key, ssl: ssl?)
+
+        # HACK: Apparently we can't access 'name' from 'resource(name)' from
+        # here, so get it elsewhere. invocation_path == "booru posts show".
+        name = invocation_path.split[1]
+        puts booru.send(name).show(id).to_json
+      rescue Resource::Error => e
+        # XXX
+        warn "ID #{id} not found."
+        exit 1
+      end
+    end
+
+    subcommand ["index", "ls"], "list #{name}" do
+      option ["-f", "--from"], "N", "start listing from id N",     default: 1           do |id| Integer(id) end
+      option ["-t", "--to"],   "N", "stop listing at id N",        default: 100_000_000 do |id| Integer(id) end
+      option ["-l", "--limit"],"N", "limit N results per request", default: 1000        do |id| Integer(id) end
+      option ["-F", "--follow"], :flag, "don't exit; keeping polling for more results", default: false
+
+      def execute
+        booru = Booru.new(site, login: login, api_key: api_key, ssl: ssl?)
+
+        name = invocation_path.split[1]
+        booru.send(name).each(from: from, to: to, limit: limit) do |record|
+          puts record.to_json
+        end
+      end
+    end
+  end
+end
+
+Clamp do
+  option ["-s", "--site"], "SITE", "the site to use", default: "danbooru.donmai.us"
+  option ["-S", "--ssl"],  :flag,  "connect with SSL", default: false
+
+  option ["-L", "--login"],   "LOGIN", "the username to use", environment_variable: "BOORU_LOGIN"
+  option ["-K", "--api-key"], "KEY",   "the API key to use",  environment_variable: "BOORU_API_KEY"
+
+  resource :posts
+  resource :tags
+  resource :users
+end
