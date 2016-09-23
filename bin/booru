@@ -50,6 +50,7 @@ Clamp do
   option ["-K", "--api-key"], "KEY",   "the API key to use",  environment_variable: "BOORU_API_KEY"
 
   resource :posts
+  resource :post_versions
   resource :tags
   resource :users
 end

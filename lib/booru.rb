@@ -4,7 +4,7 @@ require "json"
 class Booru
   attr_reader :site, :login, :api_key, :ssl, :timeout
   attr_reader :base_url, :conn
-  attr_reader :posts, :tags, :users, :user_feedbacks, :comments
+  attr_reader :posts, :post_versions, :tags, :users, :user_feedbacks, :comments
 
   def initialize(site, login: nil, api_key: nil, ssl: false, timeout: 300)
     @site, @login, @api_key, @ssl, @timeout = site, login, api_key, ssl, timeout
@@ -15,6 +15,7 @@ class Booru
     end
 
     @posts = Resource.new(self, "posts")
+    @post_versions = Resource.new(self, "post_versions")
     @tags = Resource.new(self, "tags")
     @users = Resource.new(self, "users")
     @comments = Comments.new(self)
