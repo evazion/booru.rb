@@ -6,8 +6,11 @@ Gem::Specification.new do |s|
   s.description = "A simple client for the Danbooru 2 API"
   s.authors     = ["evazion"]
   s.email       = 'noizave@gmail.com'
-  s.files       = ["lib/booru.rb", "bin/booru"]
+  s.files       << "lib/booru.rb"
+  s.files       << "bin/booru"
+  s.files       << "bin/csv2dtext"
   s.executables << "booru"
+  s.executables << "csv2dtext"
   s.homepage    = 'http://rubygems.org/gems/booru'
   s.license     = 'MIT'
 end

@@ -1,0 +1,20 @@
+#!/usr/bin/env RUBY_OPTS=-w ruby
+
+require 'csv'
+
+def csv2dtext(str)
+  csv = CSV.parse(str)
+
+  rows = csv.each_with_index.map do |row, i|
+    row = ([i] + row).each_with_index.map do |col, j|
+      tag = (i == 0 || j == 0) ? "th" : "td"
+      "\t[#{tag}]#{col}[/#{tag}]"
+    end
+
+    ["[tr]", row, "[/tr]"].join("\n")
+  end
+
+  ["[table]", rows, "[/table]"].join("\n")
+end
+
+puts csv2dtext(ARGF.read)
