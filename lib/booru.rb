@@ -63,10 +63,13 @@ class Resource
       id: id,
       limit: limit,
       url: url,
+    }
+
+    state.merge!({
       first: records.first["id"],
       last: records.last["id"],
       missing: (records.first["id"] .. records.last["id"]).to_a - records.map { |r| r["id"] }
-    }
+    }) if records.size > 0
 
     warn state.to_json
   end
@@ -95,15 +98,16 @@ class Resource
         limit = [2 * limit, max_limit].min
         id = records.map { |r| r["id"] }.max
       elsif code == 500 && limit > 1
-        on_response(:fail, records, id, limit, code, url)
+        on_response(:fail, [], id, limit, code, url)
 
         limit = 1
       elsif code == 500 && limit == 1
-        on_response(:ignore, records, id, limit, code, url)
+        on_response(:ignore, [], id, limit, code, url)
 
         limit = max_limit
         id += 1
       else
+        on_response(:exception, [], id, limit, code, url)
         raise Error
       end
     end
