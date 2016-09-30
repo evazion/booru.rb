@@ -60,8 +60,28 @@ Clamp do
   option ["-L", "--login"],   "LOGIN", "the username to use", environment_variable: "BOORU_LOGIN"
   option ["-K", "--api-key"], "KEY",   "the API key to use",  environment_variable: "BOORU_API_KEY"
 
-  resource :posts
-  resource :post_versions
+  resource :artists
+  resource :artist_commentaries
+  resource :bulk_update_requests
+  resource :comments
+  resource :notes
+  resource :pools
+  resource :post_appeals
+  resource :post_flags
+  resource :tag_aliases
+  resource :tag_implications
+  resource :uploads
+  resource :user_feedbacks
+  resource :wiki_pages
+  resource :forum_topics
+  resource :forum_posts
   resource :tags
   resource :users
+  resource :posts
+
+  resource :post_versions
+  resource :note_versions
+  resource :wiki_page_versions
+  resource :pool_versions
+  resource :artist_commentary_versions
 end

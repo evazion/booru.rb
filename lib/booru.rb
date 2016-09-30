@@ -4,7 +4,6 @@ require "json"
 class Booru
   attr_reader :site, :login, :api_key, :ssl, :timeout
   attr_reader :base_url, :conn
-  attr_reader :posts, :post_versions, :tags, :users, :user_feedbacks, :comments
 
   def initialize(site, login: nil, api_key: nil, ssl: false, timeout: 300)
     @site, @login, @api_key, @ssl, @timeout = site, login, api_key, ssl, timeout
@@ -13,13 +12,33 @@ class Booru
     @conn = Faraday.new(url: @base_url) do |f|
       f.adapter :net_http_persistent
     end
-
-    @posts = Resource.new(self, "posts")
-    @post_versions = Resource.new(self, "post_versions")
-    @tags = Resource.new(self, "tags")
-    @users = Resource.new(self, "users")
-    @comments = Comments.new(self)
   end
+
+  def posts; @posts ||= Resource.new(self, "posts"); end
+  def artists; @artists ||= Artists.new(self); end
+  def artist_commentaries; @artist_commentaries ||= Resource.new(self, "artist_commentaries"); end
+  def bulk_update_requests; @bulk_update_requests ||= Resource.new(self, "bulk_update_requests"); end
+  def comments; @comments ||= Comments.new(self); end
+  def notes; @notes ||= Resource.new(self, "notes"); end
+  def pools; @pools ||= Resource.new(self, "pools"); end
+  def post_appeals; @post_appeals ||= Resource.new(self, "post_appeals"); end
+  def post_flags; @post_flags ||= Resource.new(self, "post_flags"); end
+  def tag_aliases; @tag_aliases ||= Resource.new(self, "tag_aliases"); end
+  def tag_implications; @tag_implications ||= Resource.new(self, "tag_implications"); end
+  def uploads; @uploads ||= Resource.new(self, "uploads"); end
+  def user_feedbacks; @user_feedbacks ||= Resource.new(self, "user_feedbacks"); end
+  def wiki_pages; @wiki_pages ||= Resource.new(self, "wiki_pages"); end
+  def forum_topics; @forum_topics ||= Resource.new(self, "forum_topics"); end
+  def forum_posts; @forum_posts ||= Resource.new(self, "forum_posts"); end
+  def tags; @tags ||= Resource.new(self, "tags"); end
+  def users; @users ||= Resource.new(self, "users"); end
+  def posts; @posts ||= Resource.new(self, "posts"); end
+
+  def post_versions; @post_versions ||= Resource.new(self, "post_versions"); end
+  def note_versions; @note_versions ||= Resource.new(self, "note_versions"); end
+  def wiki_page_versions; @wiki_page_versions ||= Resource.new(self, "wiki_page_versions"); end
+  def pool_versions; @pool_versions ||= Resource.new(self, "pool_versions"); end
+  def artist_commentary_versions; @artist_commentary_versions ||= Resource.new(self, "artist_commentary_versions"); end
 
   def params
     @params ||= {}
