@@ -11,6 +11,6 @@ Gem::Specification.new do |s|
   s.files       << "bin/csv2dtext"
   s.executables << "booru"
   s.executables << "csv2dtext"
-  s.homepage    = 'http://rubygems.org/gems/booru'
+  s.homepage    = "https://github.com/evazion/booru.rb"
   s.license     = 'MIT'
 end
