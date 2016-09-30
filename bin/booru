@@ -3,6 +3,17 @@
 require "clamp"
 require "booru"
 
+class ArtistCommand < Clamp::Command
+  subcommand "banned", "show banned artists" do
+    def execute
+      booru = Booru.new(site, login: login, api_key: api_key, ssl: ssl?)
+      puts booru.artists.banned.to_json
+    rescue Resource::Error => e
+      exit 1
+    end
+  end
+end
+
 def resource(name)
   subcommand name.to_s, "#{name} operations" do
     self.default_subcommand = "index"

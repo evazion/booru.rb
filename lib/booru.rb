@@ -114,6 +114,19 @@ class Resource
   end
 end
 
+class Artists < Resource
+  def initialize(booru)
+    super(booru, "artists")
+  end
+
+  def banned
+    response = @booru.conn.get("/#{@resource}/banned.json", params)
+
+    raise Error, response unless response.success?
+    JSON.parse(response.body)
+  end
+end
+
 class Comments < Resource
   def initialize(booru)
     super(booru, "comments", group_by: "comment")
