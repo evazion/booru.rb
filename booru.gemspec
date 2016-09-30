@@ -13,4 +13,9 @@ Gem::Specification.new do |s|
   s.executables << "csv2dtext"
   s.homepage    = "https://github.com/evazion/booru.rb"
   s.license     = 'MIT'
+
+  s.add_runtime_dependency "clamp", "~> 0.6"
+  s.add_runtime_dependency "faraday", "~> 0.9"
+  s.add_runtime_dependency "json", "~> 2.0"
+  s.add_runtime_dependency "net-http-persistent", "~> 2.9"
 end
