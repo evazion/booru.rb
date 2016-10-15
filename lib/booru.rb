@@ -2,6 +2,19 @@ require "faraday"
 require "json"
 
 class Booru
+  class Error < StandardError
+    attr_reader :response
+
+    def initialize(response)
+      @response = response
+      super(self.message)
+    end
+
+    def message
+      "#{response.headers["status"]}: #{response.env.method.upcase} #{response.env.url.to_s}"
+    end
+  end
+
   attr_reader :site, :login, :api_key, :ssl, :timeout
   attr_reader :base_url, :conn
 
@@ -12,6 +25,8 @@ class Booru
     @conn = Faraday.new(url: @base_url) do |f|
       f.adapter :net_http_persistent
     end
+
+    @conn.basic_auth(login, api_key)
   end
 
   def posts; @posts ||= Resource.new(self, "posts"); end
@@ -42,8 +57,6 @@ class Booru
 
   def params
     @params ||= {}
-    @params[:login] ||= login
-    @params[:api_key] ||= api_key
     @params
   end
 end
@@ -55,7 +68,7 @@ class Danbooru < Booru
 end
 
 class Resource
-  class Error < StandardError; end
+  class Error < Booru::Error; end
 
   include Enumerable
   attr_reader :booru, :resource, :params
@@ -71,8 +84,7 @@ class Resource
   def show(id)
     response = @booru.conn.get("/#{@resource}/#{id}.json", params.merge({ id: id }))
 
-    raise Error, response unless response.success?
-    JSON.parse(response.body)
+    return JSON.parse(response.body), (response.success? ? nil : Error.new(response))
   end
 
   def on_response(status, records, id, limit, code, url)

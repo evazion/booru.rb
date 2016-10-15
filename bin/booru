@@ -1,87 +1,150 @@
-#!/usr/bin/env RUBYOPT=-w ruby
+#!/usr/bin/env ruby
 
-require "clamp"
 require "booru"
 
-class ArtistCommand < Clamp::Command
-  subcommand "banned", "show banned artists" do
-    def execute
-      booru = Booru.new(site, login: login, api_key: api_key, ssl: ssl?)
-      puts booru.artists.banned.to_json
-    rescue Resource::Error => e
-      exit 1
-    end
-  end
-end
+require "json"
+require "thor"
 
-def resource(name)
-  subcommand name.to_s, "#{name} operations" do
-    self.default_subcommand = "index"
+# admin explore maintenance
 
-    subcommand "show", "show #{name}" do
-      parameter "id", "#{name} id"
+# comments
+Resources = %w(
+  advertisements
+  api_keys
+  artist_commentaries
+  artist_commentary_versions
+  artist_versions
+  artists
+  bans
+  bulk_update_requests
+  counts
+  delayed_jobs
+  dmails
+  dtext_preview
+  favorite_groups
+  favorites
+  forum_posts
+  forum_topics
+  ip_bans
+  iqdb_queries
+  janitor_trials
+  meta_searches
+  mod_actions
+  news_updates
+  note_previews
+  note_versions
+  notes
+  pool_element
+  pool_versions
+  pools
+  post_appeals
+  post_flags
+  post_versions
+  posts
+  related_tag
+  reports
+  saved_search_category_change
+  saved_searches
+  session
+  source
+  static
+  super_voters
+  tag_alias_request
+  tag_aliases
+  tag_implication_request
+  tag_implications
+  tag_subscriptions
+  tags
+  uploads
+  user_feedbacks
+  user_name_change_requests
+  user_revert
+  user_upgrade
+  users
+  wiki_page_versions
+  wiki_pages
+)
 
-      def execute
-        booru = Booru.new(site, login: login, api_key: api_key, ssl: ssl?)
+Resources.each do |name|
+  name = name.capitalize
 
-        # HACK: Apparently we can't access 'name' from 'resource(name)' from
-        # here, so get it elsewhere. invocation_path == "booru posts show".
-        name = invocation_path.split[1]
-        puts booru.send(name).show(id).to_json
-      rescue Resource::Error => e
-        # XXX
-        warn "ID #{id} not found."
-        exit 1
+  klass = Class.new(Thor) do
+    define_singleton_method(:name) { name.downcase }
+
+    option :from,   aliases: "-f", desc: "start listing from id N",             type: :numeric,  default: 0
+    option :to,     aliases: "-t", desc: "stop listing at id N",                type: :numeric, default: 100_000_000
+    option :limit,  aliases: "-l", desc: "limit N results per request",         type: :numeric,  default: 1000
+    option :follow, aliases: "-F", desc: "continuously print incoming records", type: :boolean,  default: false
+    desc "index", "list #{name}"
+    def index(*ids)
+      if ids.empty?
+        resource.each(from: options[:from], to: options[:to], limit: options[:limit]) do |record|
+          format record
+        end
+      else
+        show ids
       end
     end
 
-    subcommand ["index", "ls"], "list #{name}" do
-      option ["-f", "--from"], "N", "start listing from id N",     default: 1           do |id| Integer(id) end
-      option ["-t", "--to"],   "N", "stop listing at id N",        default: 100_000_000 do |id| Integer(id) end
-      option ["-l", "--limit"],"N", "limit N results per request", default: 1000        do |id| Integer(id) end
-      option ["-F", "--follow"], :flag, "don't exit; keeping polling for more results", default: false
+    desc "show ID...", "show #{name}(s) with ID(s)"
+    def show(*ids)
+      code = 0
 
-      def execute
-        booru = Booru.new(site, login: login, api_key: api_key, ssl: ssl?)
+      json = ids.map do |id|
+        record, error = resource.show(id)
 
-        name = invocation_path.split[1]
-        booru.send(name).each(from: from, to: to, limit: limit) do |record|
-          puts record.to_json
+        if error
+          code = 1
+          warn error.to_s
+        end
+
+        record
+      end
+
+      format json
+      exit code
+    end
+
+    default_command :index
+
+    no_commands do
+      def format(*args)
+        if options[:pretty]
+          puts JSON.pretty_generate(*args) 
+        else
+          puts JSON.generate(*args)
         end
       end
+
+      def booru
+        @booru ||= Booru.new(
+          options[:site],
+          login: options[:login],
+          api_key: options[:api_key],
+          ssl: options[:ssl]
+        )
+      end
+
+      def resource
+        @resource ||= booru.send(self.class.name.downcase)
+      end
     end
+  end
+
+  Object.const_set(name, klass)
+end
+
+class CLI < Thor
+  class_option :site,    aliases: "-s", desc: "the site to use",          type: :string,  default: ENV["BOORU_SITE"] || "danbooru.donmai.us"
+  class_option :ssl,     aliases: "-S", desc: "connect with SSL",         type: :boolean, default: ENV["BOORU_SSL"] || false
+  class_option :login,   aliases: "-L", desc: "the username to use",      type: :string,  default: ENV["BOORU_LOGIN"]
+  class_option :api_key, aliases: "-K", desc: "the API key to use",       type: :string,  default: ENV["BOORU_API_KEY"]
+  class_option :pretty,  aliases: "-p", desc: "pretty print JSON output", type: :boolean, default: ENV["BOORU_PRETTY"] || false
+
+  Resources.each do |cmd|
+    desc "#{cmd} SUBCOMMAND ...ARGS", "/#{cmd}"
+    subcommand cmd, const_get(cmd.capitalize)
   end
 end
 
-Clamp do
-  option ["-s", "--site"], "SITE", "the site to use", default: "danbooru.donmai.us"
-  option ["-S", "--ssl"],  :flag,  "connect with SSL", default: false
-
-  option ["-L", "--login"],   "LOGIN", "the username to use", environment_variable: "BOORU_LOGIN"
-  option ["-K", "--api-key"], "KEY",   "the API key to use",  environment_variable: "BOORU_API_KEY"
-
-  resource :artists
-  resource :artist_commentaries
-  resource :bulk_update_requests
-  resource :comments
-  resource :notes
-  resource :pools
-  resource :post_appeals
-  resource :post_flags
-  resource :tag_aliases
-  resource :tag_implications
-  resource :uploads
-  resource :user_feedbacks
-  resource :wiki_pages
-  resource :forum_topics
-  resource :forum_posts
-  resource :tags
-  resource :users
-  resource :posts
-
-  resource :post_versions
-  resource :note_versions
-  resource :wiki_page_versions
-  resource :pool_versions
-  resource :artist_commentary_versions
-end
+CLI.start(ARGV)

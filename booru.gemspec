@@ -15,8 +15,9 @@ Gem::Specification.new do |s|
   s.license     = 'MIT'
 
   s.add_development_dependency "rake", "~> 11.3"
-  s.add_runtime_dependency "clamp", "~> 0.6"
+
   s.add_runtime_dependency "faraday", "~> 0.9"
   s.add_runtime_dependency "json", "~> 2.0"
   s.add_runtime_dependency "net-http-persistent", "~> 2.9"
+  s.add_runtime_dependency "thor", "~> 0.19"
 end
