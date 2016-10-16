@@ -140,6 +140,29 @@ class Booru::Resource
     warn state.to_json
   end
 
+=begin
+  def [](*args)
+    if args.size == 1 && args[0].kind_of?(Integer)
+      show(args[0])
+    else
+      enums = args.map do |arg|
+        if arg.kind_of?(Range) && arg.first.kind_of?(Integer) && arg.last.kind_of?(Integer)
+          each(from: arg.first, to: arg.last)
+        elsif arg.kind_of?(Integer)
+          each(from: arg, to: arg)
+        end
+      end
+
+      enums.reduce do |enums, enum|
+        Enumerator.new do |y|
+          enum.each { |e| y << e }
+          enums.each { |e| y << e }
+        end
+      end
+    end
+  end
+=end
+
   def each(from: 1, to: 1_000_000_000, limit: 1000)
     # XXX set size of collection
     return enum_for(__method__) unless block_given?
