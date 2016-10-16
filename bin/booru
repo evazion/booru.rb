@@ -5,67 +5,7 @@ require "booru"
 require "json"
 require "thor"
 
-# admin explore maintenance
-
-# comments
-Resources = %w(
-  advertisements
-  api_keys
-  artist_commentaries
-  artist_commentary_versions
-  artist_versions
-  artists
-  bans
-  bulk_update_requests
-  counts
-  delayed_jobs
-  dmails
-  dtext_preview
-  favorite_groups
-  favorites
-  forum_posts
-  forum_topics
-  ip_bans
-  iqdb_queries
-  janitor_trials
-  meta_searches
-  mod_actions
-  news_updates
-  note_previews
-  note_versions
-  notes
-  pool_element
-  pool_versions
-  pools
-  post_appeals
-  post_flags
-  post_versions
-  posts
-  related_tag
-  reports
-  saved_search_category_change
-  saved_searches
-  session
-  source
-  static
-  super_voters
-  tag_alias_request
-  tag_aliases
-  tag_implication_request
-  tag_implications
-  tag_subscriptions
-  tags
-  uploads
-  user_feedbacks
-  user_name_change_requests
-  user_revert
-  user_upgrade
-  users
-  wiki_page_versions
-  wiki_pages
-)
-
-Resources.each do |name|
+Booru::Resources.each do |name|
   name = name.capitalize
 
   klass = Class.new(Thor) do
@@ -141,7 +81,7 @@ class CLI < Thor
   class_option :api_key, aliases: "-K", desc: "the API key to use",       type: :string,  default: ENV["BOORU_API_KEY"]
   class_option :pretty,  aliases: "-p", desc: "pretty print JSON output", type: :boolean, default: ENV["BOORU_PRETTY"] || false
 
-  Resources.each do |cmd|
+  Booru::Resources.each do |cmd|
     desc "#{cmd} SUBCOMMAND ...ARGS", "/#{cmd}"
     subcommand cmd, const_get(cmd.capitalize)
   end

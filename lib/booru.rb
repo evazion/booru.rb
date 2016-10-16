@@ -2,6 +2,65 @@ require "faraday"
 require "json"
 
 class Booru
+  # admin explore maintenance
+  # comments
+  Resources = %w(
+    advertisements
+    api_keys
+    artist_commentaries
+    artist_commentary_versions
+    artist_versions
+    artists
+    bans
+    bulk_update_requests
+    counts
+    delayed_jobs
+    dmails
+    dtext_preview
+    favorite_groups
+    favorites
+    forum_posts
+    forum_topics
+    ip_bans
+    iqdb_queries
+    janitor_trials
+    meta_searches
+    mod_actions
+    news_updates
+    note_previews
+    note_versions
+    notes
+    pool_element
+    pool_versions
+    pools
+    post_appeals
+    post_flags
+    post_versions
+    posts
+    related_tag
+    reports
+    saved_search_category_change
+    saved_searches
+    session
+    source
+    static
+    super_voters
+    tag_alias_request
+    tag_aliases
+    tag_implication_request
+    tag_implications
+    tag_subscriptions
+    tags
+    uploads
+    user_feedbacks
+    user_name_change_requests
+    user_revert
+    user_upgrade
+    users
+    wiki_page_versions
+    wiki_pages
+  )
+
   class Error < StandardError
     attr_reader :response
 
@@ -29,35 +88,15 @@ class Booru
     @conn.basic_auth(login, api_key)
   end
 
-  def posts; @posts ||= Resource.new(self, "posts"); end
-  def artists; @artists ||= Artists.new(self); end
-  def artist_commentaries; @artist_commentaries ||= Resource.new(self, "artist_commentaries"); end
-  def bulk_update_requests; @bulk_update_requests ||= Resource.new(self, "bulk_update_requests"); end
-  def comments; @comments ||= Comments.new(self); end
-  def notes; @notes ||= Resource.new(self, "notes"); end
-  def pools; @pools ||= Resource.new(self, "pools"); end
-  def post_appeals; @post_appeals ||= Resource.new(self, "post_appeals"); end
-  def post_flags; @post_flags ||= Resource.new(self, "post_flags"); end
-  def tag_aliases; @tag_aliases ||= Resource.new(self, "tag_aliases"); end
-  def tag_implications; @tag_implications ||= Resource.new(self, "tag_implications"); end
-  def uploads; @uploads ||= Resource.new(self, "uploads"); end
-  def user_feedbacks; @user_feedbacks ||= Resource.new(self, "user_feedbacks"); end
-  def wiki_pages; @wiki_pages ||= Resource.new(self, "wiki_pages"); end
-  def forum_topics; @forum_topics ||= Resource.new(self, "forum_topics"); end
-  def forum_posts; @forum_posts ||= Resource.new(self, "forum_posts"); end
-  def tags; @tags ||= Resource.new(self, "tags"); end
-  def users; @users ||= Resource.new(self, "users"); end
-  def posts; @posts ||= Resource.new(self, "posts"); end
-
-  def post_versions; @post_versions ||= Resource.new(self, "post_versions"); end
-  def note_versions; @note_versions ||= Resource.new(self, "note_versions"); end
-  def wiki_page_versions; @wiki_page_versions ||= Resource.new(self, "wiki_page_versions"); end
-  def pool_versions; @pool_versions ||= Resource.new(self, "pool_versions"); end
-  def artist_commentary_versions; @artist_commentary_versions ||= Resource.new(self, "artist_commentary_versions"); end
-
-  def params
-    @params ||= {}
-    @params
+  # Effectively does `def posts; @posts ||= Resource.new(self, "posts"); end`
+  # for every resource.
+  Resources.each do |name|
+    define_method(name) do
+      instance_variable_set(
+        "@#{name}",
+        instance_variable_get("@#{name}") || Booru::Resource.new(self, name)
+      )
+    end
   end
 end
 
@@ -67,22 +106,18 @@ class Danbooru < Booru
   end
 end
 
-class Resource
+class Booru::Resource
   class Error < Booru::Error; end
 
   include Enumerable
-  attr_reader :booru, :resource, :params
+  attr_reader :booru, :resource
 
-  def initialize(booru, resource, params = {})
-    @booru, @resource, @params = booru, resource, params
-  end
-
-  def params
-    @booru.params.merge(@params)
+  def initialize(booru, resource)
+    @booru, @resource = booru, resource
   end
 
   def show(id)
-    response = @booru.conn.get("/#{@resource}/#{id}.json", params.merge({ id: id }))
+    response = booru.conn.get("/#{@resource}/#{id}.json")
 
     return JSON.parse(response.body), (response.success? ? nil : Error.new(response))
   end
@@ -106,13 +141,13 @@ class Resource
   end
 
   def each(from: 1, to: 1_000_000_000, limit: 1000)
+    # XXX set size of collection
+    return enum_for(__method__) unless block_given?
+
     id, max_limit, code, url = from - 1, limit, nil, nil
 
     loop do
-      response = @booru.conn.get(
-        "/#{@resource}.json",
-        params.merge({ page: "a#{id}", limit: limit })
-      )
+      response = booru.conn.get("/#{@resource}.json", { page: "a#{id}", limit: limit })
 
       code = response.env.status
       url = response.env.url
@@ -145,21 +180,15 @@ class Resource
   end
 end
 
-class Artists < Resource
+class Booru::Artists < Booru::Resource
   def initialize(booru)
     super(booru, "artists")
   end
 
   def banned
-    response = @booru.conn.get("/#{@resource}/banned.json", params)
+    response = booru.conn.get("/#{@resource}/banned.json")
 
     raise Error, response unless response.success?
     JSON.parse(response.body)
-  end
-end
-
-class Comments < Resource
-  def initialize(booru)
-    super(booru, "comments", group_by: "comment")
   end
 end
