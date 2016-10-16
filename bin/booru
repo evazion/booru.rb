@@ -3,6 +3,7 @@
 require "booru"
 
 require "json"
+require "pry"
 require "thor"
 
 Booru::Resources.each do |name|
@@ -84,6 +85,12 @@ class CLI < Thor
   Booru::Resources.each do |cmd|
     desc "#{cmd} SUBCOMMAND ...ARGS", "/#{cmd}"
     subcommand cmd, const_get(cmd.capitalize)
+  end
+
+  desc "console", "open a Ruby console"
+  def console
+    booru = Booru.new(options[:site], login: options[:login], api_key: options[:api_key], ssl: options[:ssl])
+    binding.pry
   end
 end
 
