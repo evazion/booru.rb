@@ -13,6 +13,7 @@ class Booru
     artists
     bans
     bulk_update_requests
+    comments
     counts
     delayed_jobs
     dmails
@@ -86,6 +87,9 @@ class Booru
     end
 
     @conn.basic_auth(login, api_key) if login && api_key
+
+    @notes = Booru::Notes.new(self)
+    @comments = Booru::Comments.new(self)
   end
 
   # Effectively does `def posts; @posts ||= Resource.new(self, "posts"); end`
@@ -110,14 +114,14 @@ class Booru::Resource
   class Error < Booru::Error; end
 
   include Enumerable
-  attr_reader :booru, :resource
+  attr_reader :booru, :resource, :params
 
-  def initialize(booru, resource)
-    @booru, @resource = booru, resource
+  def initialize(booru, resource, params = {})
+    @booru, @resource, @params = booru, resource, params
   end
 
   def show(id)
-    response = booru.conn.get("/#{@resource}/#{id}.json")
+    response = booru.conn.get("/#{@resource}/#{id}.json", params)
 
     return JSON.parse(response.body), (response.success? ? nil : Error.new(response))
   end
@@ -170,7 +174,7 @@ class Booru::Resource
     id, max_limit, code, url = from - 1, limit, nil, nil
 
     loop do
-      response = booru.conn.get("/#{@resource}.json", { page: "a#{id}", limit: limit })
+      response = booru.conn.get("/#{@resource}.json", params.merge({ page: "a#{id}", limit: limit }))
 
       code = response.env.status
       url = response.env.url
@@ -197,7 +201,7 @@ class Booru::Resource
         id += 1
       else
         on_response(:exception, [], id, limit, code, url)
-        raise Error
+        raise Error.new(response)
       end
     end
   end
@@ -213,5 +217,17 @@ class Booru::Artists < Booru::Resource
 
     raise Error, response unless response.success?
     JSON.parse(response.body)
+  end
+end
+
+class Booru::Notes < Booru::Resource
+  def initialize(booru)
+    super(booru, "notes", group_by: "note")
+  end
+end
+
+class Booru::Comments < Booru::Resource
+  def initialize(booru)
+    super(booru, "comments", group_by: "comment")
   end
 end
