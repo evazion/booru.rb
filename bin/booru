@@ -12,10 +12,10 @@ Booru::Resources.each do |name|
   klass = Class.new(Thor) do
     define_singleton_method(:name) { name.downcase }
 
-    option :from,   aliases: "-f", desc: "start listing from id N",             type: :numeric,  default: 0
+    option :from,   aliases: "-f", desc: "start listing from id N",             type: :numeric, default: 1
     option :to,     aliases: "-t", desc: "stop listing at id N",                type: :numeric, default: 100_000_000
-    option :limit,  aliases: "-l", desc: "limit N results per request",         type: :numeric,  default: 1000
-    option :follow, aliases: "-F", desc: "continuously print incoming records", type: :boolean,  default: false
+    option :limit,  aliases: "-l", desc: "limit N results per request",         type: :numeric, default: 1000
+    option :follow, aliases: "-F", desc: "continuously print incoming records", type: :boolean, default: false
     desc "index", "list #{name}"
     def index(*ids)
       if ids.empty?
