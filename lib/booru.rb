@@ -85,7 +85,7 @@ class Booru
       f.adapter :net_http_persistent
     end
 
-    @conn.basic_auth(login, api_key)
+    @conn.basic_auth(login, api_key) if login && api_key
   end
 
   # Effectively does `def posts; @posts ||= Resource.new(self, "posts"); end`
