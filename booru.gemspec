@@ -16,6 +16,7 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency "rake", "~> 11.3"
 
+  s.add_runtime_dependency "activesupport", "~> 5.0"
   s.add_runtime_dependency "faraday", "~> 0.9"
   s.add_runtime_dependency "json", "~> 2.0"
   s.add_runtime_dependency "net-http-persistent", "~> 2.9"
