@@ -2,6 +2,8 @@
 
 require "booru"
 
+require "active_support"
+require "active_support/core_ext"
 require "json"
 require "pry"
 require "thor"
@@ -16,10 +18,12 @@ Booru::Resources.each do |name|
     option :to,     aliases: "-t", desc: "stop listing at id N",                type: :numeric, default: 100_000_000
     option :limit,  aliases: "-l", desc: "limit N results per request",         type: :numeric, default: 1000
     option :follow, aliases: "-F", desc: "continuously print incoming records", type: :boolean, default: false
+    option :params, aliases: "-o", desc: "additional parameters",               type: :string, default: ""
     desc "index", "list #{name}"
     def index(*ids)
       if ids.empty?
-        resource.each(from: options[:from], to: options[:to], limit: options[:limit]) do |record|
+        params = options[:params].split(/=/).map { |kv| kv.split(/=/) }.to_h
+        resource.each(from: options[:from], to: options[:to], limit: options[:limit], extra_params: params) do |record|
           format record
         end
       else
@@ -44,6 +48,31 @@ Booru::Resources.each do |name|
 
       format json
       exit code
+    end
+
+    desc "update [ID] [JSON]", "update #{name.singularize} with given JSON data"
+    def update(id=nil, json=nil)
+      # json ||= STDIN.read
+      # data = JSON.parse(json)
+      # id ||= data["id"]
+
+      STDIN.each_line do |line|
+        data = JSON.parse(line)
+        id = data["id"]
+        loop do
+          warn "update: <#{line}>, id: <#{id}>, data: <#{data.to_s.strip}>"
+          response, error = resource.update(id, data)
+          # format(response)
+          if error
+            warn "error: <#{line}>, id: <#{id}>, data: <#{data.to_s.strip}>"
+            warn error.response.status, error.response.body
+            sleep 1.minute
+            next
+          else
+            break
+          end
+        end
+      end
     end
 
     default_command :index

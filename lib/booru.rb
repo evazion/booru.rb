@@ -84,6 +84,8 @@ class Booru
 
     @conn = Faraday.new(url: @base_url) do |f|
       f.adapter :net_http_persistent
+      f.headers['Content-Type'] = 'application/json'
+      # f.headers['Accept'] = 'application/json'
     end
 
     @conn.basic_auth(login, api_key) if login && api_key
@@ -126,6 +128,19 @@ class Booru::Resource
     return JSON.parse(response.body), (response.success? ? nil : Error.new(response))
   end
 
+  def update(id, data)
+    response = booru.conn.put("/#{@resource}/#{id}", data.to_json)
+
+    # return JSON.parse(response.body), (response.success? ? nil : Error.new(response))
+    return response.body, ((response.status >= 200 && response.status < 400) ? nil : Error.new(response))
+  end
+
+  def update!(id, json)
+    response, error = update(id, json)
+    throw error if error
+    response
+  end
+
   def on_response(status, records, id, limit, code, url)
     state = {
       status: status,
@@ -138,7 +153,7 @@ class Booru::Resource
     state.merge!({
       first: records.first["id"],
       last: records.last["id"],
-      missing: (records.first["id"] .. records.last["id"]).to_a - records.map { |r| r["id"] }
+      # missing: (records.first["id"] .. records.last["id"]).to_a - records.map { |r| r["id"] }
     }) if records.size > 0
 
     warn state.to_json
@@ -167,17 +182,17 @@ class Booru::Resource
   end
 =end
 
-  def each(from: 1, to: 1_000_000_000, limit: 1000)
+  def each(from: 1, to: 1_000_000_000, limit: 1000, extra_params: {})
     # XXX set size of collection
     return enum_for(__method__) unless block_given?
 
     id, max_limit, code, url = from - 1, limit, nil, nil
 
     loop do
-      response = booru.conn.get("/#{@resource}.json", params.merge({ page: "a#{id}", limit: limit }))
+      response = booru.conn.get("/#{@resource}.json", params.merge({ page: "a#{id}", limit: limit }).merge(extra_params))
 
       code = response.env.status
-      url = response.env.url
+      url = response.env.url.to_s
 
       if response.success? && code == 200
         records = JSON.parse(response.body)
