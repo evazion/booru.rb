@@ -246,3 +246,9 @@ class Booru::Comments < Booru::Resource
     super(booru, "comments", group_by: "comment")
   end
 end
+
+class Booru::Tags < Booru::Resource
+  def initialize(booru)
+    super(booru, "tags", hide_empty: "no")
+  end
+end
